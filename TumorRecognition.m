@@ -42,11 +42,11 @@ sliceLabel = uicontrol('Style', 'text', 'String', 'Slice: 1', ...
 uicontrol('Style', 'slider', 'Min', 1, 'Max', num_slices, 'Value', 1, ...
     'SliderStep', [1/(num_slices-1), 10/(num_slices-1)], ...
     'Units', 'normalized', 'Position', [0.2 0.02 0.6 0.03], ...
-    'Callback', @(src, ~) updateSlices(round(get(src, 'Value')), img1, img2, img3, img4, FLAIR, T1, T1GD, T2));
+    'Callback', @(src, ~) updateSlices(round(get(src, 'Value')), img1, img2, img3, img4, FLAIR, T1, T1GD, T2, sliceLabel));
 
 
 % Callback -  update slices
-function updateSlices(slice, img1, img2, img3, img4, FLAIR, T1, T1GD, T2)
+function updateSlices(slice, img1, img2, img3, img4, FLAIR, T1, T1GD, T2, sliceLabel)
     img1.CData = FLAIR(:, :, slice);
     img2.CData = T1(:, :, slice);
     img3.CData = T1GD(:, :, slice);
