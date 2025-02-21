@@ -1,5 +1,5 @@
 close all
-clear 
+clear all
 clc
 
 % returns data type struct - used for converting to mm 
@@ -15,6 +15,17 @@ T1 = niftiread("UPENN-GBM-00003_11_T1.nii.gz");
 T1GD = niftiread("UPENN-GBM-00003_11_T1GD.nii.gz");
 T2 = niftiread("UPENN-GBM-00003_11_T2.nii.gz");
 segm = niftiread("UPENN-GBM-00003_11_segm.nii.gz");
+
+% %enhancing tumor regions
+% T1ET=T1(segm==4); %enhancing tumor region
+% FLAIRET = FLAIR(segm==4);
+% T1GDET = T1GD(segm==4);
+% T2ET = T2(segm==4);
+% 
+% %matrix [t1, t2, flair, t1gd]
+% matrixET = [T1ET, FLAIRET, T1GDET, T2ET];
+% 
+% scatter3(matrixET(:, 1), matrixET(:, 2), matrixET(:, 3), matrixET(:, 4), "*")
 
 %% Extract voxel values corresponding to tumor regions
 ET_mask = segm == 4; % Enhancing tumor mask
@@ -79,19 +90,19 @@ label = [labelZeros; labelOnes]; % y actual values
 
 SVMModel = fitcsvm(all, label, 'KernelFunction', 'linear');
 
-% Make predictions
-predictions = predict(SVMModel, all);
-
-% Compute confusion matrix
-confusion_mat = confusionmat(label, predictions);
-
-% Evaluate model performance
-accuracy = sum(diag(confusion_mat)) / sum(confusion_mat(:));
-
-% Display confusion matrix and accuracy
-disp('Confusion Matrix:');
-disp(confusion_mat);
-fprintf('Accuracy: %.2f%%\n', accuracy * 100);
+% % Make predictions
+% predict = predict(SVMModel, all);
+% 
+% % Compute confusion matrix
+% confusion_mat = confusionmat(label, predict);
+% 
+% % Evaluate model performance
+% accuracy = sum(diag(confusion_mat)) / sum(confusion_mat(:));
+% 
+% % Display confusion matrix and accuracy
+% disp('Confusion Matrix:');
+% disp(confusion_mat);
+% fprintf('Accuracy: %.2f%%\n', accuracy * 100);
 
 
 % 3D visualize 
@@ -133,34 +144,35 @@ num_slices = size(FLAIR, 3); % Get number of slices
 %     sliceLabel.String = ['Slice: ', num2str(slice)];
 % end
 
+
 %checking correct size
 %disp(size(FLAIR)); % [240 240 155] <- Z component (155) corresponds to
 %amount of 'slices'/images, X/Y components correspond to amount of voxels
 %("pixels") in X vs Y direction... essentially resolution
 
-% %choosing a point
-% value = FLAIR(146, 110, 100); %coordinates 113, 142 at each of the slices
-% disp(value) %returns intensity
-% 
-% 
-% %converting to mm [width - left to right, height - top to bottom, depth -
-% %slice #]
-% mm = voxelToReal(FLAIRInfo, 147, 110, 100);
-% disp(mm + " mm");
-% 
-% % figure('Name','Completed Segment');
-% % sliceViewer(segm, "SliceNumber",100);
-% % hold on
-% % % [x, y] = ginput(1); %get mouse coordinates - pick point (chosen: 146,
-% % % 110)
-% % % disp(x);
-% % % disp(y);
-% % plot(146, 110, 'g*');
-% % hold off
-% 
-% function mm = voxelToReal(image, X, Y, Z)
-%     voxelSize = image.PixelDimensions;
-%     mm = [X, Y, Z] .* voxelSize;
-% end
+%choosing a point
+value = FLAIR(146, 110, 100); %coordinates 113, 142 at each of the slices
+disp(value) %returns intensity
+
+
+%converting to mm [width - left to right, height - top to bottom, depth -
+%slice #]
+mm = voxelToReal(FLAIRInfo, 147, 110, 100);
+disp(mm + " mm");
+
+% figure('Name','Completed Segment');
+% sliceViewer(segm, "SliceNumber",100);
+% hold on
+% % [x, y] = ginput(1); %get mouse coordinates - pick point (chosen: 146,
+% % 110)
+% % disp(x);
+% % disp(y);
+% plot(146, 110, 'g*');
+% hold off
+
+function mm = voxelToReal(image, X, Y, Z)
+    voxelSize = image.PixelDimensions;
+    mm = [X, Y, Z] .* voxelSize;
+end
 
 
