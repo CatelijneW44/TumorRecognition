@@ -72,10 +72,10 @@ doubleNot = double(NotETValues);
 allTumor = [doubleET; doubleNC; doubleED];
 all = [doubleET; doubleNC; doubleED; doubleNot]; %X values
 
-labelZeros = zeros(length(allTumor), 1);
-labelOnes = ones(length(NotETValues), 1);
+labelOnes = ones(length(allTumor), 1);
+labelZeros = zeros(length(NotETValues), 1);
 
-label = [labelZeros; labelOnes]; % y actual values
+label = [labelOnes; labelZeros]; % y actual values
 
 SVMModel = fitcsvm(all, label, 'KernelFunction', 'linear');
 
@@ -94,7 +94,7 @@ disp(confusion_mat);
 fprintf('Accuracy: %.2f%%\n', accuracy * 100);
 
 
-% 3D visualize 
+%% 3D visualize 
 %volshow(FLAIR);
 % visualize all slices in one image
 % figure;
