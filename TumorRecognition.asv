@@ -15,12 +15,10 @@ allFiles = files(~startsWith({files.name}, '.'));
 subjectID = {allFiles.name};
 
 % Split into train (first 25) and test (remaining)
-trainingNumber = 12; 
+trainingNumber = 25; %file #4 appears to be strange..?
 testingNumber = trainingNumber + 20;
 trainingData = subjectID(:, 1:trainingNumber);
-trainingData(:,4)
-trainingData(:, 4) = []; %file #4 appears to be strange..? <- removed
-
+trainingData(:, 4) = [];
 testingData = subjectID(:, trainingNumber+1:testingNumber);
 
 
