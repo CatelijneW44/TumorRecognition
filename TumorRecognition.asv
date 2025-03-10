@@ -14,13 +14,29 @@ allFiles = files(~startsWith({files.name}, '.'));
 % Extract subject names
 subjectID = {allFiles.name};
 
-% Split into train (first 25) and test (remaining)
-trainingNumber = 25; %file #4 appears to be strange..?
-testingNumber = trainingNumber + 20;
+% Split into train (first 15)
+trainingNumber = 24; 
 trainingData = subjectID(:, 1:trainingNumber);
+
+%editing data
 trainingData(:, 4) = [];
+trainingData(:, 11-1) = [];
+trainingData(:, 12-2) = [];
+trainingData(:, 14-3) = [];
+trainingData(:, 15-4) = [];
+trainingData(:, 16-5) = [];
+trainingData(:, 19-6) = [];
+trainingData(:, 22-7) = [];
+trainingData(:, 24-8) = [];
+
+%final length(trainingData) = 15
+
+% split into testing (30)
+testingNumber = trainingNumber + 30;
 testingData = subjectID(:, trainingNumber+1:testingNumber);
 
+%editing testing data
+testingData(:, 28-9) = []; %28 at training# 15 - incorrect size
 
 %% make training data
 
@@ -114,6 +130,7 @@ fprintf('Accuracy: %.2f%%\n', accuracy * 100);
 % colormap gray;
 % figure;
 % sliceViewer(segm) %<- MIPAV visualize ONE image
+
 %MIPAV visualize ALL images
 num_slices = size(FLAIR, 3); % Get number of slices
 
@@ -212,7 +229,6 @@ function [FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject)
         disp("missing file in "+ subject);
     end
 end
-
 
 %% processing data function
 

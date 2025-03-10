@@ -14,15 +14,29 @@ allFiles = files(~startsWith({files.name}, '.'));
 % Extract subject names
 subjectID = {allFiles.name};
 
-% Split into train (first 25) and test (remaining)
-trainingNumber = 12; 
-testingNumber = trainingNumber + 20;
+% Split into train (first 15)
+trainingNumber = 24; 
 trainingData = subjectID(:, 1:trainingNumber);
-trainingData(:,4)
-trainingData(:, 4) = []; %file #4 appears to be strange..? <- removed
 
+%editing data
+trainingData(:, 4) = [];
+trainingData(:, 11-1) = [];
+trainingData(:, 12-2) = [];
+trainingData(:, 14-3) = [];
+trainingData(:, 15-4) = [];
+trainingData(:, 16-5) = [];
+trainingData(:, 19-6) = [];
+trainingData(:, 22-7) = [];
+trainingData(:, 24-8) = [];
+
+%final length(trainingData) = 15
+
+% split into testing (30)
+testingNumber = trainingNumber + 30;
 testingData = subjectID(:, trainingNumber+1:testingNumber);
 
+%editing testing data
+testingData(:, 28-9) = []; %28 at training# 15 - incorrect size
 
 %% make training data
 
@@ -71,12 +85,7 @@ for i = 1:length(testingData)
     actualLabel = [actualLabel; label];
 end
 
-% % returns data type struct - used for converting to mm 
-% FLAIRInfo = niftiinfo("UPENN-GBM-00003_11_FLAIR.nii.gz");
-% T1Info = niftiinfo("UPENN-GBM-00003_11_T1.nii.gz");
-% T1GDInfo = niftiinfo("UPENN-GBM-00003_11_T1GD.nii.gz");
-% T2Info = niftiinfo("UPENN-GBM-00003_11_T2.nii.gz");
-% segmInfo = niftiinfo("UPENN-GBM-00003_11_segm.nii.gz");
+
 % % Create scatter plots
 % scatter3(ET_values(:,1), ET_values(:,2), ET_values(:,3), 'r', 'filled', 'DisplayName', 'Enhancing Tumor');
 % hold on;
@@ -107,15 +116,9 @@ disp('Confusion Matrix:');
 disp(confusion_mat);
 fprintf('Accuracy: %.2f%%\n', accuracy * 100);
 
-
-%% 3D visualize 
-%volshow(FLAIR);
-% visualize all slices in one image
-% figure;
-% montage(FLAIR, 'DisplayRange', []);
-% colormap gray;
-% figure;
+%% 3D Visualize
 % sliceViewer(segm) %<- MIPAV visualize ONE image
+
 %MIPAV visualize ALL images
 num_slices = size(FLAIR, 3); % Get number of slices
 
@@ -214,7 +217,6 @@ function [FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject)
         disp("missing file in "+ subject);
     end
 end
-
 
 %% processing data function
 
