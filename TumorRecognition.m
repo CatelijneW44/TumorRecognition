@@ -6,37 +6,21 @@ clc
 %folder
 folderPath = "C:\Users\catelijne\Downloads\Pre-operative_TCGA_GBM_NIfTI_and_Segmentations\Pre-operative_TCGA_GBM_NIfTI_and_Segmentations";
 
-% Get all NIfTI files in the folder
+%get NIfTI files from folder
 files = dir(folderPath);
 
 allFiles = files(~startsWith({files.name}, '.'));
 
-% Extract subject names
+% subject names
 subjectID = {allFiles.name};
 
-% Split into train (first 15)
-trainingNumber = 24; 
+%% Split into train (first 15)
+trainingNumber = 20; 
 trainingData = subjectID(:, 1:trainingNumber);
 
-%editing data
-trainingData(:, 4) = [];
-trainingData(:, 11-1) = [];
-trainingData(:, 12-2) = [];
-trainingData(:, 14-3) = [];
-trainingData(:, 15-4) = [];
-trainingData(:, 16-5) = [];
-trainingData(:, 19-6) = [];
-trainingData(:, 22-7) = [];
-trainingData(:, 24-8) = [];
-
-%final length(trainingData) = 15
-
-% split into testing (30)
+%% split into testing (30)
 testingNumber = trainingNumber + 30;
 testingData = subjectID(:, trainingNumber+1:testingNumber);
-
-%editing testing data
-testingData(:, 28-9) = []; %28 at training# 15 - incorrect size
 
 %% make training data
 
@@ -44,88 +28,82 @@ allFeature = [];
 allLabel = [];
 
 for i = 1:length(trainingData)
+    %select file
     subject = trainingData{i};
     subjectPath = fullfile(folderPath, subject);
-    
+
+    %unzip
     [FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject);
 
+    %from img to tumor vs not tumor doubles
     [allTumor, allNot] = processData(FLAIR, T1GD, T2, segm);
 
-    % Append to training dataset
+    %add to training dataset
     allFeature = [allFeature; allTumor; allNot]; 
     allLabel = [allLabel; ones(size(allTumor, 1), 1); zeros(size(allNot, 1), 1)];
 end 
 
 %% train model
-mdl = fitcsvm(allFeature, allLabel, 'KernelFunction', 'linear');
+mdl = fitcsvm(allFeature, allLabel, 'KernelFunction', 'gaussian');
 
 %% test data
 allTumorRegion = [];
 actualLabel = [];
 
 for i = 1:length(testingData)
+    %select file
     subject = testingData{i};
     subjectPath = fullfile(folderPath, subject);
-    
+
+    %unzip
     [FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject);
 
+    %from img to doubles
     [allTumor, allNot] = processData(FLAIR, T1GD, T2, segm); 
-    
+
+    %create labels
     labelOnes = ones(length(allTumor), 1);
     labelZeros = zeros(length(allNot), 1);
-    
+
     label = [labelOnes; labelZeros]; % y actual values  
 
     all = [allTumor; allNot];
 
-    % Make predictions + testing
+    % Make predictions (of labels)
     predictions = predict(mdl, all);
 
+    %append to testing dataset
     allTumorRegion = [allTumorRegion; predictions];
     actualLabel = [actualLabel; label];
 end
 
-
-% % Create scatter plots
-% scatter3(ET_values(:,1), ET_values(:,2), ET_values(:,3), 'r', 'filled', 'DisplayName', 'Enhancing Tumor');
-% hold on;
-% scatter3(NC_values(:,1), NC_values(:,2), NC_values(:,3), 'g', 'filled', 'DisplayName', 'Non-enhancing Core');
-% hold on;
-% scatter3(ED_values(:,1), ED_values(:,2), ED_values(:,3), 'b', 'filled', 'DisplayName', 'Edematous Region');
-% hold on;
-% scatter3(NotETValues(:, 1), NotETValues(:, 2), NotETValues(:, 3),  'm', 'filled', 'DisplayName', 'NOT Tumor')
-% 
-% 
-% % Customize plot
-% xlabel('T1GD');
-% ylabel('T2');
-% zlabel('FLAIR');
-% title('Scatter Plot of Glioblastoma Tumor Regions');
-% legend;
-% hold off;
-
-
-% Compute confusion matrix
+% confusion matrix
 confusion_mat = confusionmat(actualLabel, allTumorRegion);
 
-% Evaluate model performance
+%eval model performance
 accuracy = sum(diag(confusion_mat)) / sum(confusion_mat(:));
 
-% Display confusion matrix and accuracy
+%confusion matrix and accuracy
 disp('Confusion Matrix:');
 disp(confusion_mat);
 fprintf('Accuracy: %.2f%%\n', accuracy * 100);
 
-%% 3D Visualize
-% sliceViewer(segm) %<- MIPAV visualize ONE image
-
-%MIPAV visualize ALL images
-num_slices = size(FLAIR, 3); % Get number of slices
-
+% %% 3D Visualize
+%
+% subject = trainingData{4};
+% subjectPath = fullfile(folderPath, subject);
+% 
+% [FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject);
+% 
+% %sliceViewer(segm) %<- MIPAV visualize ONE image
+% 
+% %MIPAV visualize ALL images
+% num_slices = size(FLAIR, 3); % Get number of slices
+% 
 % %  figure and subplots
 % fig = figure('Name','MIPAV View', 'Position',[552,363,683.6666666666665,544]);
 % hImg(1) = subplot(2, 2, 1); img1 = imshow(FLAIR(:, :, 1), []); title('FLAIR');
-% hImg(2) = subplot(2, 2, 2); img2 = imshow(T1(:, :, 1), []); title('T1');
+% hImg(2) = subplot(2, 2, 2); img2 = imshow(segm(:, :, 1), [0 4]); title('Segm'); %enhance
 % hImg(3) = subplot(2, 2, 3); img3 = imshow(T1GD(:, :, 1), []); title('T1GD');
 % hImg(4) = subplot(2, 2, 4); img4 = imshow(T2(:, :, 1), []); title('T2');
 % 
@@ -138,46 +116,16 @@ num_slices = size(FLAIR, 3); % Get number of slices
 % uicontrol('Style', 'slider', 'Min', 1, 'Max', num_slices, 'Value', 1, ...
 %     'SliderStep', [1/(num_slices-1), 10/(num_slices-1)], ...
 %     'Units', 'normalized', 'Position', [0.2 0.02 0.6 0.03], ...
-%     'Callback', @(src, ~) updateSlices(round(get(src, 'Value')), img1, img2, img3, img4, FLAIR, T1, T1GD, T2, sliceLabel));
+%     'Callback', @(src, ~) updateSlices(round(get(src, 'Value')), img1, img2, img3, img4, FLAIR, segm, T1GD, T2, sliceLabel));
 % 
 % 
 % % Callback -  update slices
-% function updateSlices(slice, img1, img2, img3, img4, FLAIR, T1, T1GD, T2, sliceLabel)
+% function updateSlices(slice, img1, img2, img3, img4, FLAIR, segm, T1GD, T2, sliceLabel)
 %     img1.CData = FLAIR(:, :, slice);
-%     img2.CData = T1(:, :, slice);
+%     img2.CData = segm(:, :, slice);
 %     img3.CData = T1GD(:, :, slice);
 %     img4.CData = T2(:, :, slice);
 %     sliceLabel.String = ['Slice: ', num2str(slice)];
-% end
-
-%checking correct size
-%disp(size(FLAIR)); % [240 240 155] <- Z component (155) corresponds to
-%amount of 'slices'/images, X/Y components correspond to amount of voxels
-%("pixels") in X vs Y direction... essentially resolution
-
-% %choosing a point
-% value = FLAIR(146, 110, 100); %coordinates 113, 142 at each of the slices
-% disp(value) %returns intensity
-% 
-% 
-% %converting to mm [width - left to right, height - top to bottom, depth -
-% %slice #]
-% mm = voxelToReal(FLAIRInfo, 147, 110, 100);
-% disp(mm + " mm");
-% 
-% % figure('Name','Completed Segment');
-% % sliceViewer(segm, "SliceNumber",100);
-% % hold on
-% % % [x, y] = ginput(1); %get mouse coordinates - pick point (chosen: 146,
-% % % 110)
-% % % disp(x);
-% % % disp(y);
-% % plot(146, 110, 'g*');
-% % hold off
-% 
-% function mm = voxelToReal(image, X, Y, Z)
-%     voxelSize = image.PixelDimensions;
-%     mm = [X, Y, Z] .* voxelSize;
 % end
 
 %% unzipping function
@@ -188,6 +136,7 @@ function [FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject)
 
     % Unzip each file temporarily for reading
     tempFolder = fullfile(subjectPath, 'unzipped');
+    %check whether temp folder already exists
     if ~exist(tempFolder, 'dir')
         mkdir(tempFolder);
         
@@ -203,6 +152,7 @@ function [FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject)
     t2_file = dir(fullfile(tempFolder, subject + "*_t2.nii"));
     segm_file = dir(fullfile(tempFolder, subject + "*_GlistrBoost_ManuallyCorrected.nii"));
 
+    %troubleshooting
     if isempty(segm_file)
         segm_file = dir(fullfile(tempFolder, subject + "*_GlistrBoost.nii"));
     end
@@ -219,16 +169,18 @@ function [FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject)
 end
 
 %% processing data function
-
 function [allTumor, allNot] = processData(FLAIR, T1GD, T2, segm)
     % Extract voxel values corresponding to tumor regions
     ET_mask = segm == 4; % Enhancing tumor mask
     NC_mask = segm == 1; % Non-enhancing core mask
     ED_mask = segm == 2; % Edematous region mask
-    mask = segm == 0;
+    mask = segm == 0; % Not tumor mask
     
     % Sample voxels from each region
     num_samples = size(FLAIR, 3);
+    if length(find(NC_mask)) < num_samples
+        num_samples = length(find(NC_mask));
+    end
     ET_voxels = datasample(find(ET_mask), num_samples, 'Replace', false); %sampling without replacement
     NC_voxels = datasample(find(NC_mask), num_samples, 'Replace', false);
     ED_voxels = datasample(find(ED_mask), num_samples, 'Replace', false);
