@@ -18,53 +18,9 @@ subjectID = {allFiles.name};
 trainingNumber = 20; 
 trainingData = subjectID(:, 1:trainingNumber);
 
-%editing data by imaging 
-%YES: 1 3 6 7 9 10 12 13 14 15 16 18 20
-%NO:2 5 8 17
-%WEIRD: 4 11 19
-trainingData(:, 2) = [];
-trainingData(:, 4-1) = [];
-trainingData(:, 5-2) = [];
-trainingData(:, 8-3) = [];
-trainingData(:, 11-4) = [];
-trainingData(:, 17-5) = [];
-trainingData(:, 19-6) = [];
-
-%editing data by trial
-%trainingData(:, 4) = [];
-% trainingData(:, 11-1) = [];
-% trainingData(:, 12-2) = [];
-% trainingData(:, 14-3) = [];
-% trainingData(:, 15-4) = [];
-% trainingData(:, 16-5) = [];
-% trainingData(:, 19-6) = [];
-% trainingData(:, 22-7) = [];
-% trainingData(:, 24-8) = [];
-
-%final length(trainingData) = 15
-
 %% split into testing (30)
-testingNumber = trainingNumber + 20;
+testingNumber = trainingNumber + 30;
 testingData = subjectID(:, trainingNumber+1:testingNumber);
-
-%editing testing data
-%testingData(:, 28-9) = []; %28 at training# 15 - incorrect size
-
-%editing testing data by imaging 
-% YES: 1 3 5 7 8 12 16 18 19
-% NO: 2 6 9 10 13 14 15 17
-% WEIRD: 4 11
-testingData(:, 2) = [];
-testingData(:, 4-1) = [];
-testingData(:, 6-2) = [];
-testingData(:, 9-3) = [];
-testingData(:, 10-4) = [];
-testingData(:, 11-5) = [];
-testingData(:, 13-6) = [];
-testingData(:, 14-7) = [];
-testingData(:, 15-8) = [];
-testingData(:, 17-9) = [];
-
 
 %% make training data
 
@@ -88,7 +44,7 @@ for i = 1:length(trainingData)
 end 
 
 %% train model
-mdl = fitcsvm(allFeature, allLabel, 'KernelFunction', 'linear');
+mdl = fitcsvm(allFeature, allLabel, 'KernelFunction', 'rbf');
 
 %% test data
 allTumorRegion = [];
@@ -132,55 +88,45 @@ disp('Confusion Matrix:');
 disp(confusion_mat);
 fprintf('Accuracy: %.2f%%\n', accuracy * 100);
 
-% %% 3D Visualize
-% 
-% %training
-% %YES: 1 3 6 7 9 10 12 13 14 15 16 18 20
-% %NO:2 5 8 17
-% %WEIRD: 4 11 19
-% 
-% %testing
-% % YES: 1 3 5 7 8 12 16 18 19
-% % NO: 2 6 9 10 13 14 15 17
-% % WEIRD: 4 11
-% length(testingData);
-% subject = trainingData{4};
-% subjectPath = fullfile(folderPath, subject);
-% 
-% [FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject);
-% 
-% %sliceViewer(segm) %<- MIPAV visualize ONE image
-% 
-% %MIPAV visualize ALL images
-% num_slices = size(FLAIR, 3); % Get number of slices
-% 
-% %  figure and subplots
-% fig = figure('Name','MIPAV View', 'Position',[552,363,683.6666666666665,544]);
-% hImg(1) = subplot(2, 2, 1); img1 = imshow(FLAIR(:, :, 1), []); title('FLAIR');
-% hImg(2) = subplot(2, 2, 2); img2 = imshow(segm(:, :, 1), [0 4]); title('Segm'); %enhance
-% hImg(3) = subplot(2, 2, 3); img3 = imshow(T1GD(:, :, 1), []); title('T1GD');
-% hImg(4) = subplot(2, 2, 4); img4 = imshow(T2(:, :, 1), []); title('T2');
-% 
-% %  slice number label
-% sliceLabel = uicontrol('Style', 'text', 'String', 'Slice: 1', ...
-%     'Units', 'normalized', 'Position', [0.4 0.06 0.2 0.03], ...
-%     'FontSize', 12, 'FontWeight', 'bold');
-% 
-% % Create slider
-% uicontrol('Style', 'slider', 'Min', 1, 'Max', num_slices, 'Value', 1, ...
-%     'SliderStep', [1/(num_slices-1), 10/(num_slices-1)], ...
-%     'Units', 'normalized', 'Position', [0.2 0.02 0.6 0.03], ...
-%     'Callback', @(src, ~) updateSlices(round(get(src, 'Value')), img1, img2, img3, img4, FLAIR, segm, T1GD, T2, sliceLabel));
-% 
-% 
-% % Callback -  update slices
-% function updateSlices(slice, img1, img2, img3, img4, FLAIR, segm, T1GD, T2, sliceLabel)
-%     img1.CData = FLAIR(:, :, slice);
-%     img2.CData = segm(:, :, slice);
-%     img3.CData = T1GD(:, :, slice);
-%     img4.CData = T2(:, :, slice);
-%     sliceLabel.String = ['Slice: ', num2str(slice)];
-% end
+%% 3D Visualize
+
+subject = trainingData{3};
+subjectPath = fullfile(folderPath, subject);
+
+[FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject);
+
+%sliceViewer(segm) %<- MIPAV visualize ONE image
+
+%MIPAV visualize ALL images
+num_slices = size(FLAIR, 3); % Get number of slices
+
+%  figure and subplots
+fig = figure('Name','MIPAV View', 'Position',[552,363,683.6666666666665,544]);
+hImg(1) = subplot(2, 2, 1); img1 = imshow(FLAIR(:, :, 1), []); title('FLAIR');
+hImg(2) = subplot(2, 2, 2); img2 = imshow(segm(:, :, 1), [0 4]); title('Segm'); %enhance
+hImg(3) = subplot(2, 2, 3); img3 = imshow(T1GD(:, :, 1), []); title('T1GD');
+hImg(4) = subplot(2, 2, 4); img4 = imshow(T2(:, :, 1), []); title('T2');
+
+%  slice number label
+sliceLabel = uicontrol('Style', 'text', 'String', 'Slice: 1', ...
+    'Units', 'normalized', 'Position', [0.4 0.06 0.2 0.03], ...
+    'FontSize', 12, 'FontWeight', 'bold');
+
+% Create slider
+uicontrol('Style', 'slider', 'Min', 1, 'Max', num_slices, 'Value', 1, ...
+    'SliderStep', [1/(num_slices-1), 10/(num_slices-1)], ...
+    'Units', 'normalized', 'Position', [0.2 0.02 0.6 0.03], ...
+    'Callback', @(src, ~) updateSlices(round(get(src, 'Value')), img1, img2, img3, img4, FLAIR, segm, T1GD, T2, sliceLabel));
+
+
+% Callback -  update slices
+function updateSlices(slice, img1, img2, img3, img4, FLAIR, segm, T1GD, T2, sliceLabel)
+    img1.CData = FLAIR(:, :, slice);
+    img2.CData = segm(:, :, slice);
+    img3.CData = T1GD(:, :, slice);
+    img4.CData = T2(:, :, slice);
+    sliceLabel.String = ['Slice: ', num2str(slice)];
+end
 
 %% unzipping function
 
@@ -223,16 +169,19 @@ function [FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject)
 end
 
 %% processing data function
-
 function [allTumor, allNot] = processData(FLAIR, T1GD, T2, segm)
-    % Extract voxel values corresponding to tumor regions
+    %voxel values corresponding to tumor regions - output: logic array
     ET_mask = segm == 4; % Enhancing tumor mask
     NC_mask = segm == 1; % Non-enhancing core mask
     ED_mask = segm == 2; % Edematous region mask
     mask = segm == 0; % Not tumor mask
     
-    % Sample voxels from each region
+    %sample voxels
     num_samples = size(FLAIR, 3);
+    %troublesh
+    if length(find(NC_mask)) < num_samples
+        num_samples = length(find(NC_mask));
+    end
     ET_voxels = datasample(find(ET_mask), num_samples, 'Replace', false); %sampling without replacement
     NC_voxels = datasample(find(NC_mask), num_samples, 'Replace', false);
     ED_voxels = datasample(find(ED_mask), num_samples, 'Replace', false);

@@ -44,7 +44,7 @@ for i = 1:length(trainingData)
 end 
 
 %% train model
-mdl = fitcsvm(allFeature, allLabel, 'KernelFunction', 'gaussian');
+mdl = fitcsvm(allFeature, allLabel, 'KernelFunction', 'rbf');
 
 %% test data
 allTumorRegion = [];
@@ -88,45 +88,45 @@ disp('Confusion Matrix:');
 disp(confusion_mat);
 fprintf('Accuracy: %.2f%%\n', accuracy * 100);
 
-% %% 3D Visualize
-%
-% subject = trainingData{4};
-% subjectPath = fullfile(folderPath, subject);
-% 
-% [FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject);
-% 
-% %sliceViewer(segm) %<- MIPAV visualize ONE image
-% 
-% %MIPAV visualize ALL images
-% num_slices = size(FLAIR, 3); % Get number of slices
-% 
-% %  figure and subplots
-% fig = figure('Name','MIPAV View', 'Position',[552,363,683.6666666666665,544]);
-% hImg(1) = subplot(2, 2, 1); img1 = imshow(FLAIR(:, :, 1), []); title('FLAIR');
-% hImg(2) = subplot(2, 2, 2); img2 = imshow(segm(:, :, 1), [0 4]); title('Segm'); %enhance
-% hImg(3) = subplot(2, 2, 3); img3 = imshow(T1GD(:, :, 1), []); title('T1GD');
-% hImg(4) = subplot(2, 2, 4); img4 = imshow(T2(:, :, 1), []); title('T2');
-% 
-% %  slice number label
-% sliceLabel = uicontrol('Style', 'text', 'String', 'Slice: 1', ...
-%     'Units', 'normalized', 'Position', [0.4 0.06 0.2 0.03], ...
-%     'FontSize', 12, 'FontWeight', 'bold');
-% 
-% % Create slider
-% uicontrol('Style', 'slider', 'Min', 1, 'Max', num_slices, 'Value', 1, ...
-%     'SliderStep', [1/(num_slices-1), 10/(num_slices-1)], ...
-%     'Units', 'normalized', 'Position', [0.2 0.02 0.6 0.03], ...
-%     'Callback', @(src, ~) updateSlices(round(get(src, 'Value')), img1, img2, img3, img4, FLAIR, segm, T1GD, T2, sliceLabel));
-% 
-% 
-% % Callback -  update slices
-% function updateSlices(slice, img1, img2, img3, img4, FLAIR, segm, T1GD, T2, sliceLabel)
-%     img1.CData = FLAIR(:, :, slice);
-%     img2.CData = segm(:, :, slice);
-%     img3.CData = T1GD(:, :, slice);
-%     img4.CData = T2(:, :, slice);
-%     sliceLabel.String = ['Slice: ', num2str(slice)];
-% end
+%% 3D Visualize
+
+subject = trainingData{3};
+subjectPath = fullfile(folderPath, subject);
+
+[FLAIR, T1GD, T2, segm] = unzipFiles(subjectPath, subject);
+
+%sliceViewer(segm) %<- MIPAV visualize ONE image
+
+%MIPAV visualize ALL images
+num_slices = size(FLAIR, 3); % Get number of slices
+
+%  figure and subplots
+fig = figure('Name','MIPAV View', 'Position',[552,363,683.6666666666665,544]);
+hImg(1) = subplot(2, 2, 1); img1 = imshow(FLAIR(:, :, 1), []); title('FLAIR');
+hImg(2) = subplot(2, 2, 2); img2 = imshow(segm(:, :, 1), [0 4]); title('Segm'); %enhance
+hImg(3) = subplot(2, 2, 3); img3 = imshow(T1GD(:, :, 1), []); title('T1GD');
+hImg(4) = subplot(2, 2, 4); img4 = imshow(T2(:, :, 1), []); title('T2');
+
+%  slice number label
+sliceLabel = uicontrol('Style', 'text', 'String', 'Slice: 1', ...
+    'Units', 'normalized', 'Position', [0.4 0.06 0.2 0.03], ...
+    'FontSize', 12, 'FontWeight', 'bold');
+
+% Create slider
+uicontrol('Style', 'slider', 'Min', 1, 'Max', num_slices, 'Value', 1, ...
+    'SliderStep', [1/(num_slices-1), 10/(num_slices-1)], ...
+    'Units', 'normalized', 'Position', [0.2 0.02 0.6 0.03], ...
+    'Callback', @(src, ~) updateSlices(round(get(src, 'Value')), img1, img2, img3, img4, FLAIR, segm, T1GD, T2, sliceLabel));
+
+
+% Callback -  update slices
+function updateSlices(slice, img1, img2, img3, img4, FLAIR, segm, T1GD, T2, sliceLabel)
+    img1.CData = FLAIR(:, :, slice);
+    img2.CData = segm(:, :, slice);
+    img3.CData = T1GD(:, :, slice);
+    img4.CData = T2(:, :, slice);
+    sliceLabel.String = ['Slice: ', num2str(slice)];
+end
 
 %% unzipping function
 
@@ -170,29 +170,31 @@ end
 
 %% processing data function
 function [allTumor, allNot] = processData(FLAIR, T1GD, T2, segm)
-    % Extract voxel values corresponding to tumor regions
+    %voxel values corresponding to tumor regions - output: logic array
     ET_mask = segm == 4; % Enhancing tumor mask
     NC_mask = segm == 1; % Non-enhancing core mask
     ED_mask = segm == 2; % Edematous region mask
     mask = segm == 0; % Not tumor mask
     
-    % Sample voxels from each region
+    
     num_samples = size(FLAIR, 3);
+    %troubleshooting
     if length(find(NC_mask)) < num_samples
         num_samples = length(find(NC_mask));
     end
+    %sample voxels
     ET_voxels = datasample(find(ET_mask), num_samples, 'Replace', false); %sampling without replacement
     NC_voxels = datasample(find(NC_mask), num_samples, 'Replace', false);
     ED_voxels = datasample(find(ED_mask), num_samples, 'Replace', false);
     NotETVoxels = datasample(find(mask), num_samples, 'Replace', false);
 
-    % Extract voxel values from MRI volumes
+    %get voxel values from images
     ET_values = [T1GD(ET_voxels), T2(ET_voxels), FLAIR(ET_voxels)];
     NC_values = [T1GD(NC_voxels), T2(NC_voxels), FLAIR(NC_voxels)];
     ED_values = [T1GD(ED_voxels), T2(ED_voxels), FLAIR(ED_voxels)];
     Not_values = [T1GD(NotETVoxels), T2(NotETVoxels), FLAIR(NotETVoxels)];
 
-    % Convert to double
+    %to double
     allTumor = double([ET_values; NC_values; ED_values]);
     allNot = double(Not_values);
 end
